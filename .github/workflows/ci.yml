@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pytest httpx
+      - name: Self-checks de los módulos
+        run: |
+          python models.py
+          python extract.py
+          python detector.py
+      - name: Tests (incluye suite adversarial con LLM mockeado)
+        # OLLAMA_URL a un puerto muerto: garantiza que nada llama a un LLM real
+        run: OLLAMA_URL=http://localhost:9 pytest tests/ -q

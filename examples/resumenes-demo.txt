@@ -1,0 +1,61 @@
+===== ID 1 | Reunión semanal de producto | 2026-01-12 =====
+# Reunión semanal de producto — Empresa Demo S.L.
+
+## Estado general
+La campaña de invierno avanza según lo previsto. Persona A repasó el estado de los
+tres pedidos abiertos del cliente demo-client: dos en producción y uno pendiente de
+confirmación de medidas.
+
+## Decisiones
+- Se aprueba adelantar la producción del pedido P-104 una semana para cubrir la
+  campaña de febrero.
+- Persona B queda como responsable única del contacto con demo-client hasta el cierre
+  de la campaña.
+
+## Riesgos
+- El proveedor de embalaje acumula tres días de retraso; si llega a cinco, el pedido
+  P-104 no sale en fecha.
+
+## Action items
+- Persona A: confirmar medidas del pedido P-105 con demo-client antes del viernes.
+- Persona B: pedir presupuesto alternativo de embalaje a un segundo proveedor.
+- Persona C: publicar el calendario de campaña en el tablón interno.
+
+===== ID 2 | Revisión mensual de operaciones | 2026-02-02 =====
+# Revisión mensual de operaciones — Empresa Demo S.L.
+
+## Estado general
+Cierre de enero con la producción al 92% del plan. El pedido P-104 salió en fecha
+gracias al cambio de proveedor de embalaje decidido en la reunión anterior.
+
+## Hechos
+- El nuevo proveedor de embalaje redujo el plazo de entrega de 7 a 3 días.
+- demo-client confirmó las medidas del pedido P-105 y añadió un pedido nuevo (P-110).
+- Persona C detectó un cuello de botella en el turno de tarde: la máquina 2 para
+  20 minutos por cada cambio de formato.
+
+## Decisiones
+- Se aprueba un ensayo de dos semanas agrupando pedidos por formato para reducir
+  los cambios de la máquina 2.
+- El presupuesto de mantenimiento pasa a revisarse trimestralmente.
+
+## Action items
+- Persona A: preparar la propuesta de agrupación por formato antes del 9 de febrero.
+- Persona B: comunicar a demo-client la fecha estimada del pedido P-110.
+
+===== ID 3 | Reunión extraordinaria: incidencia de calidad | 2026-02-10 =====
+# Incidencia de calidad en el pedido P-105 — Empresa Demo S.L.
+
+## Hechos
+- demo-client reportó rayaduras en el 4% de las unidades del pedido P-105.
+- Persona C revisó el lote y confirmó que el origen es el nuevo embalaje: falta
+  una lámina separadora entre unidades.
+
+## Decisiones
+- Se repone sin coste el 4% afectado y se añade la lámina separadora a la
+  especificación de embalaje de TODOS los pedidos a partir de hoy.
+- La especificación de embalaje pasa a estar versionada y firmada por calidad.
+
+## Action items
+- Persona B: gestionar la reposición con demo-client esta semana.
+- Persona C: actualizar la especificación de embalaje (v2) y comunicarla al proveedor.

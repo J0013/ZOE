@@ -1,0 +1,36 @@
+# Unidad systemd de referencia para desplegar ZOE con usuario dedicado y
+# sandboxing del sistema de archivos. Ajusta las rutas a tu instalacion.
+#
+# Instalacion:
+#   sudo useradd --system --home-dir /opt/zoe --shell /usr/sbin/nologin zoe
+#   sudo git clone <repo> /opt/zoe && cd /opt/zoe
+#   sudo -u zoe python3 -m venv .venv && sudo -u zoe .venv/bin/pip install -r requirements.txt
+#   sudo mkdir -p /opt/zoe/data /opt/zoe/memory
+#   sudo chown -R zoe:zoe /opt/zoe
+#   sudo chmod 700 /opt/zoe/data /opt/zoe/memory
+#   # el token se genera al primer arranque; despues:
+#   sudo chmod 600 /opt/zoe/data/upload_token.txt
+#   sudo cp deploy/zoe.service.example /etc/systemd/system/zoe.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now zoe
+
+[Unit]
+Description=ZOE memory backend (local-first)
+After=network.target
+
+[Service]
+User=zoe
+Group=zoe
+WorkingDirectory=/opt/zoe
+# Solo loopback: acceso remoto = Tailscale/VPN, NUNCA 0.0.0.0
+ExecStart=/opt/zoe/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8900
+Restart=on-failure
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/zoe/data /opt/zoe/memory
+PrivateTmp=true
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

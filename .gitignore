@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.env
+.env.*
+!.env.example
+data/
+memory/
+*.sqlite*
+*.db
+*.tgz
+*.log
+AUDIT_REPORT.md
+interfaz/
+.claude/
+CLAUDE.md
