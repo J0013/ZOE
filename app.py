@@ -221,7 +221,9 @@ EXTENSIONES_PERMITIDAS = {".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".md", ".cs
 for d in (INBOX, HECHO, ERROR, REVISAR, INGEST_LOGS):
     d.mkdir(parents=True, exist_ok=True)
 if not TOKEN_FILE.exists():
+    TOKEN_FILE.touch(mode=0o600)  # solo el dueño: el token no es legible por otros usuarios
     TOKEN_FILE.write_text(secrets.token_urlsafe(24), encoding="utf-8")
+TOKEN_FILE.chmod(0o600)  # repara instalaciones previas que lo crearon con 644
 UPLOAD_TOKEN = TOKEN_FILE.read_text(encoding="utf-8").strip()
 
 
