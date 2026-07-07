@@ -56,3 +56,17 @@ def test_modelos_hilos_invalido_da_400():
     assert r.status_code == 400
     despues = app_mod.MODELOS_FILE.read_bytes() if app_mod.MODELOS_FILE.exists() else None
     assert antes == despues
+
+
+def test_upload_rechazado_no_deja_temporales(monkeypatch):
+    """Un upload rechazado por tamaño no deja ni el archivo ni restos temporales
+    del streaming en data/."""
+    client, app_mod = _client()
+    data_dir = app_mod.INBOX.parent
+    antes = {p.name for p in data_dir.iterdir()}
+    monkeypatch.setattr(app_mod, "MAX_UPLOAD_BYTES", 1024)
+    r = client.post("/upload", headers={"X-Token": app_mod.UPLOAD_TOKEN},
+                    files=[("files", ("grande.txt", b"x" * 4096, "text/plain"))])
+    assert r.json()["rechazados"][0]["error"] == "supera 100 MB"
+    assert not list(app_mod.INBOX.glob("*grande*"))
+    assert {p.name for p in data_dir.iterdir()} == antes

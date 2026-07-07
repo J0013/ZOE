@@ -19,6 +19,7 @@ import secrets
 import shutil
 import sqlite3
 import subprocess
+import tempfile
 import threading
 import time
 from datetime import datetime, timezone
@@ -405,8 +406,8 @@ async def upload(request: Request, files: list[UploadFile] = File(...)):
 
     Solo se aceptan extensiones de EXTENSIONES_PERMITIDAS
     (.pdf .docx .xlsx .pptx .txt .md .csv) y hasta MAX_UPLOAD_BYTES (100 MB)
-    por archivo; el limite se aplica en streaming (nunca se carga en RAM mas
-    del limite ni se escribe nada en INBOX de un archivo rechazado)."""
+    por archivo; el limite se aplica en streaming a disco (memoria constante,
+    nada llega a INBOX de un archivo rechazado)."""
     if not _auth_token(request):  # POST: solo header, la cookie no vale (CSRF)
         return _err("token invalido", 403)
     aceptados, rechazados = [], []
@@ -415,21 +416,29 @@ async def upload(request: Request, files: list[UploadFile] = File(...)):
         if Path(name).suffix not in EXTENSIONES_PERMITIDAS:
             rechazados.append({"file": uf.filename, "error": "extensión no permitida"})
             continue
-        # Lectura en chunks: si supera el limite se corta aqui, sin cargar el
-        # body entero en RAM (antes el check llegaba DESPUES de leerlo todo).
-        data = bytearray()
-        while chunk := await uf.read(1024 * 1024):
-            data.extend(chunk)
-            if len(data) > MAX_UPLOAD_BYTES:
-                break
-        if len(data) > MAX_UPLOAD_BYTES:
-            rechazados.append({"file": uf.filename, "error": "supera 100 MB"})
-            continue
-        if not data:
-            rechazados.append({"file": uf.filename, "error": "vacio"})
-            continue
-        (INBOX / name).write_bytes(data)
-        aceptados.append({"file": uf.filename, "en_cola_como": name})
+        # Streaming a disco en chunks: memoria constante por archivo (antes se
+        # acumulaba en RAM hasta el limite). Temporal en data/ (mismo filesystem
+        # que inbox/) para que el movimiento final sea atomico; el finally
+        # garantiza que nunca queda un temporal huerfano.
+        tmp = tempfile.NamedTemporaryFile(dir=INBOX.parent, delete=False)
+        try:
+            total = 0
+            with tmp:
+                while chunk := await uf.read(1024 * 1024):
+                    total += len(chunk)
+                    if total > MAX_UPLOAD_BYTES:
+                        break
+                    tmp.write(chunk)
+            if total > MAX_UPLOAD_BYTES:
+                rechazados.append({"file": uf.filename, "error": "supera 100 MB"})
+                continue
+            if total == 0:
+                rechazados.append({"file": uf.filename, "error": "vacio"})
+                continue
+            os.replace(tmp.name, INBOX / name)
+            aceptados.append({"file": uf.filename, "en_cola_como": name})
+        finally:
+            Path(tmp.name).unlink(missing_ok=True)  # no-op si ya se movio a inbox
     return {"ok": True, "aceptados": aceptados, "rechazados": rechazados,
             "nota": "se procesan en serie; estado en /inbox"}
 
