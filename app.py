@@ -227,6 +227,13 @@ TOKEN_FILE.chmod(0o600)  # repara instalaciones previas que lo crearon con 644
 UPLOAD_TOKEN = TOKEN_FILE.read_text(encoding="utf-8").strip()
 
 
+def _token_valido(candidato: str) -> bool:
+    """compare_digest peta con no-ASCII (uvicorn decodifica headers como latin-1);
+    un token hostil debe dar 403 limpio, nunca 500."""
+    return bool(candidato) and candidato.isascii() \
+        and secrets.compare_digest(candidato, UPLOAD_TOKEN)
+
+
 def _header_token(request: Request) -> str:
     """Token explicito por header: Authorization: Bearer o X-Token. Nunca por
     query string (acabaria en access logs, historial y Referer)."""
@@ -241,8 +248,7 @@ def _auth_token(request: Request) -> bool:
     vale aqui: un form-POST cross-site desde una web hostil viajaria con la
     cookie puesta (CSRF hacia localhost); el header solo lo pone nuestro JS o
     un cliente deliberado."""
-    t = _header_token(request)
-    return bool(t) and secrets.compare_digest(t, UPLOAD_TOKEN)
+    return _token_valido(_header_token(request))
 
 
 def _auth_page(request: Request) -> bool:
@@ -250,8 +256,7 @@ def _auth_page(request: Request) -> bool:
     cookie de sesion o token por header."""
     if _auth_token(request):
         return True
-    c = request.cookies.get("zoe_token") or ""
-    return bool(c) and secrets.compare_digest(c, UPLOAD_TOKEN)
+    return _token_valido(request.cookies.get("zoe_token") or "")
 
 
 def _page_auth(request: Request):
@@ -261,8 +266,7 @@ def _page_auth(request: Request):
     Devuelve una Response que corta la peticion, o None si ya viene autenticada."""
     if _auth_page(request):
         return None
-    qt = request.query_params.get("token", "")
-    if qt and secrets.compare_digest(qt, UPLOAD_TOKEN):
+    if _token_valido(request.query_params.get("token", "")):
         resp = RedirectResponse(request.url.path, status_code=303)
         # Strict: la cookie no viaja en NINGUNA peticion iniciada por otro sitio.
         # secure=False: despliegue local por http; detras de TLS, activar secure
