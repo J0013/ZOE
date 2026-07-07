@@ -1,153 +1,151 @@
-# ZOE — memoria organizacional local-first
+🇬🇧 English · [🇪🇸 Español](README.es.md)
+
+# ZOE — local-first organizational memory
 
 ![CI](https://github.com/J0013/ZOE/actions/workflows/ci.yml/badge.svg)
 
-> *ZOE is a local-first organizational memory: it compiles meetings and documents
-> into a traceable wiki using local LLMs (Ollama) — 100% offline, no data leaves
-> the machine. Every claim carries a locator pointing to its exact source, and the
-> ingestion pipeline is hardened against prompt injection with an adversarial
-> regression suite running in CI. Docs and code comments are in Spanish.*
+*Docs in `docs/` and code comments are in Spanish.*
 
-Las empresas generan miles de conversaciones, documentos y decisiones que terminan
-perdidas. ZOE convierte todo ese conocimiento en una **memoria consultable con
-trazabilidad completa**: cada afirmación cita la fuente exacta de la que salió, y
-todo corre en local — ningún dato sale de la máquina.
+Companies generate thousands of conversations, documents and decisions that end up
+lost. ZOE turns all that knowledge into a **queryable memory with full
+traceability**: every claim cites the exact source it came from, and everything
+runs locally — no data leaves the machine.
 
-![Demo: ingesta → wiki con locators → búsqueda](docs/demo.gif)
+![Demo: ingestion → wiki with locators → search](docs/demo.gif)
 
-> Prototipo funcional extraído de un sistema en uso real (con los datos reales fuera
-> de este repo). Qué está verificado y qué está en diseño: [Estado](#estado).
+> Working prototype extracted from a system in real use (with the real data kept
+> out of this repo). What is verified and what is in design: [Status](#status).
 
-## Por qué
+## Why
 
-- **El conocimiento se evapora.** Reuniones que nadie relee, decisiones sin registro,
-  contexto que se marcha cuando alguien deja la empresa.
-- **Un chatbot con RAG no da confianza.** Responde y no sabes de dónde lo saca. ZOE
-  compila el conocimiento en un wiki razonado donde cada dato lleva su *locator*
-  `(src-reunion-NN, fecha)`: puedes ir a la fuente original y comprobarlo.
-- **El cloud no siempre es opción.** Las reuniones de una empresa son su información
-  más sensible. Aquí los modelos son de Ollama y no hay una sola llamada externa.
+- **Knowledge evaporates.** Meetings nobody rereads, decisions with no record,
+  context that walks out when someone leaves the company.
+- **A RAG chatbot doesn't earn trust.** It answers and you don't know where it got
+  it from. ZOE compiles knowledge into a reasoned wiki where every fact carries its
+  *locator* `(src-reunion-NN, date)`: you can go to the original source and check it.
+- **The cloud is not always an option.** A company's meetings are its most sensitive
+  information. Here the models come from Ollama and there is not a single external call.
 
-Y una tesis de producto: ZOE no es un chatbot — está diseñado para **trabajar solo**,
-digerir información de noche y amanecer con informes, conclusiones y alertas. La
-orquestación por ritmos (día/noche) está en [docs/vision.md](docs/vision.md) y el
-hardware para exprimirla en [docs/hardware.md](docs/hardware.md).
+And a product thesis: ZOE is not a chatbot — it is designed to **work on its own**,
+digest information overnight and wake up with reports, conclusions and alerts. The
+day/night rhythm orchestration is in [docs/vision.md](docs/vision.md) and the
+hardware to squeeze it in [docs/hardware.md](docs/hardware.md).
 
-## Arquitectura
+## Architecture
 
 ```mermaid
 flowchart LR
-    A["Fuentes inmutables<br/>reuniones · actas · docs<br/>(pdf, docx, xlsx, md)"]
-    subgraph P["Pipeline por niveles (Ollama local)"]
+    A["Immutable sources<br/>meetings · minutes · docs<br/>(pdf, docx, xlsx, md)"]
+    subgraph P["Tiered pipeline (local Ollama)"]
         direction TB
-        B1["1 · preprocesador (ligero)"] --> B2["2 · clasificador (ligero)"]
-        B2 --> B3["3 · integrador (medio)<br/>por página, en paralelo"]
+        B1["1 · preprocessor (light)"] --> B2["2 · classifier (light)"]
+        B2 --> B3["3 · integrator (medium)<br/>per page, in parallel"]
     end
-    W["Wiki razonado con locators<br/>proyectos · personas · clientes"]
-    D["4 · capa estratégica dios.py<br/>(profundo, nocturno)"]
-    R["Informe de dirección<br/>contradicciones · riesgos<br/>action items huérfanos"]
-    S["/search + asistente"]
+    W["Reasoned wiki with locators<br/>projects · people · clients"]
+    D["4 · strategic layer dios.py<br/>(deep, nightly)"]
+    R["Management report<br/>contradictions · risks<br/>orphaned action items"]
+    S["/search + assistant"]
     A --> P --> W
     W --> D --> R
     W --> S
 ```
 
-Principios de diseño:
+Design principles:
 
-- **Local-first**: los modelos son de Ollama; no hay ninguna llamada cloud en el código.
-- **El modelo más barato que aguante la tarea**: roles → niveles (ligero/medio/profundo)
-  configurables en caliente desde la página `/modelos`, sin tocar código.
-- **Contrato en código, no en prompt**: parseo tolerante de la salida del LLM,
-  verificación mecánica de que las reescrituras no pierden locators, guards
-  anti zip-bomb y límites de recursos en la ingesta de documentos.
-- **El dominio es configuración**: el motor no sabe de ningún sector; el perfil de la
-  organización vive en `data/perfil.txt` (ver `examples/perfil.txt.example`).
+- **Local-first**: the models come from Ollama; there is no cloud call anywhere in the code.
+- **The cheapest model that can hold the task**: roles → tiers (light/medium/deep)
+  hot-configurable from the `/modelos` page, without touching code.
+- **Contract in code, not in the prompt**: tolerant parsing of LLM output,
+  mechanical verification that rewrites don't lose locators, anti zip-bomb guards
+  and resource limits on document ingestion.
+- **The domain is configuration**: the engine knows nothing about any sector; the
+  organization's profile lives in `data/perfil.txt` (see `examples/perfil.txt.example`).
 
-## Demo en 5 minutos
+## 5-minute demo
 
-Requisitos: Python 3.11+. [Ollama](https://ollama.com) solo para el paso con LLM.
+Requirements: Python 3.11+. [Ollama](https://ollama.com) only for the LLM step.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-bash run.sh            # backend FastAPI en :8900
-bash test_smoke.sh     # health + ingest + search end-to-end (sin LLM)
+bash run.sh            # FastAPI backend on :8900
+bash test_smoke.sh     # health + ingest + search end-to-end (no LLM)
 
-# Pipeline completo con el dataset sintético (requiere Ollama con un modelo):
+# Full pipeline with the synthetic dataset (requires Ollama with a model):
 mkdir -p data && cp examples/resumenes-demo.txt data/resumenes.txt
 cp examples/perfil.txt.example data/perfil.txt
-python3 ingest_wiki.py                  # compila las 3 reuniones demo al wiki
+python3 ingest_wiki.py                  # compiles the 3 demo meetings into the wiki
 python3 examples/build_demo_index.py
 curl -H "Authorization: Bearer $(cat data/upload_token.txt)" "localhost:8900/search?q=embalaje"
 ```
 
-El endpoint `/upload` acepta solo las extensiones de la allowlist (`.pdf` `.docx`
-`.xlsx` `.pptx` `.txt` `.md` `.csv`, máx. 100 MB por archivo, límite aplicado en
-streaming) y las pasa por la misma tubería. Un detector de patrones de inyección
-aparta los archivos sospechosos a `data/revisar/` (visible en `/inbox`) con su
-`.motivo.txt`: requieren aprobación manual — moverlos de vuelta a `data/inbox/`
-es aprobarlos (esa segunda pasada salta el detector). El token se genera solo en
-`data/upload_token.txt` al primer arranque.
+The `/upload` endpoint only accepts the allowlisted extensions (`.pdf` `.docx`
+`.xlsx` `.pptx` `.txt` `.md` `.csv`, max 100 MB per file, limit enforced while
+streaming) and pushes them through the same pipeline. An injection-pattern detector
+quarantines suspicious files into `data/revisar/` (visible in `/inbox`) with their
+`.motivo.txt`: they require manual approval — moving them back into `data/inbox/`
+approves them (that second pass skips the detector). The token is generated
+automatically in `data/upload_token.txt` on first start.
 
-## Qué hay en el repo
+## What's in the repo
 
-| Pieza | Qué hace |
+| Piece | What it does |
 |---|---|
-| `app.py` | Backend FastAPI: `/ingest`, `/search` (FTS5), subida con bandeja (`/subir`, `/upload`, `/inbox`), configuración de modelos (`/modelos`, `/route`) |
-| `ingest_wiki.py` | Pipeline de ingesta por niveles, O(cambio): condensa → clasifica → integra por página en paralelo → índice → log |
-| `models.py` | Broker de modelos Ollama-only: roles → niveles → modelo+hilos, router IA, reintentos |
-| `extract.py` | PDF/DOCX/XLSX/TXT/MD → markdown con locators de posición (página/hoja) |
-| `dios.py` | Capa estratégica: digiere el wiki completo y escribe el informe de dirección |
-| `examples/` | Dataset sintético (3 reuniones inventadas) + indexador demo standalone |
+| `app.py` | FastAPI backend: `/ingest`, `/search` (FTS5), upload with inbox (`/subir`, `/upload`, `/inbox`), model configuration (`/modelos`, `/route`) |
+| `ingest_wiki.py` | Tiered ingestion pipeline, O(change): condense → classify → integrate per page in parallel → index → log |
+| `models.py` | Ollama-only model broker: roles → tiers → model+threads, AI router, retries |
+| `extract.py` | PDF/DOCX/XLSX/TXT/MD → markdown with position locators (page/sheet) |
+| `dios.py` | Strategic layer: digests the whole wiki and writes the management report |
+| `examples/` | Synthetic dataset (3 invented meetings) + standalone demo indexer |
 
-## Estado
+## Status
 
-**Verificado:** ingesta multi-fuente → wiki con locators (con caso de regresión para
-el error de atribución más traicionero), búsqueda FTS5, subida de documentos con
-hardening (zip-bomb guard, rlimits, prompts anti-injection), broker por niveles con
-configuración en caliente, informes de dirección con citas (`dios.py`), suite de
-regresión adversarial contra inyección (locators fabricados, instrucciones
-embebidas, texto oculto) en CI.
+**Verified:** multi-source ingestion → wiki with locators (with a regression case
+for the most treacherous attribution error), FTS5 search, document upload with
+hardening (zip-bomb guard, rlimits, anti-injection prompts), tiered broker with hot
+configuration, management reports with citations (`dios.py`), adversarial
+regression suite against injection (fabricated locators, embedded instructions,
+hidden text) in CI.
 
-**En diseño:** búsqueda híbrida BM25+vector en `/search`, edición por diff en el
-integrador, planificador de ritmos ([docs/vision.md](docs/vision.md)), interfaz
-visual (ver [Interfaz](#interfaz-en-construcción)).
+**In design:** hybrid BM25+vector search in `/search`, diff-based editing in the
+integrator, rhythm scheduler ([docs/vision.md](docs/vision.md)), visual interface
+(see [Interface](#interface-under-construction)).
 
-**Integración opcional:** acoplable a un runtime de agente
-([OpenClaw](https://github.com/openclaw/openclaw)) vía `ZOE_COMPOSE_FILE` para que un
-agente conversacional consulte la misma memoria; el repo funciona standalone sin él.
-Variables de entorno en [`.env.example`](.env.example).
+**Optional integration:** attachable to an agent runtime
+([OpenClaw](https://github.com/openclaw/openclaw)) via `ZOE_COMPOSE_FILE` so a
+conversational agent queries the same memory; the repo works standalone without it.
+Environment variables in [`.env.example`](.env.example).
 
-## Interfaz (en construcción)
+## Interface (under construction)
 
-ZOE tiene una interfaz web propia en desarrollo, no incluida en esta versión.
-No es un chat genérico encima de la API: está diseñada a medida de cómo se
-consume una memoria organizacional —
+ZOE has its own web interface under development, not included in this release.
+It is not a generic chat on top of the API: it is designed around how an
+organizational memory is actually consumed —
 
-- **El wiki como primer ciudadano**: navegación por páginas y enlaces
-  [[wiki-*]], no por hilos de conversación.
-- **Locators clicables**: de cualquier afirmación a su fuente inmutable en un
-  clic — la trazabilidad deja de ser un formato de cita y pasa a ser UX.
-- **La bandeja y los ritmos, visibles**: qué hay en cola, qué se procesó esta
-  noche, qué escribió el informe de dirección al amanecer.
+- **The wiki as a first-class citizen**: navigation by pages and [[wiki-*]]
+  links, not by conversation threads.
+- **Clickable locators**: from any claim to its immutable source in one click —
+  traceability stops being a citation format and becomes UX.
+- **The inbox and the rhythms, visible**: what's queued, what was processed
+  overnight, what the management report wrote at dawn.
 
-Mientras tanto, todo lo que hace la interfaz se puede hacer ya: los endpoints
-(`/subir`, `/search`, `/modelos`, `/inbox`) son la misma API que consumirá ella.
-El backend no cambia; la interfaz es una capa encima.
+Meanwhile, everything the interface will do can already be done: the endpoints
+(`/subir`, `/search`, `/modelos`, `/inbox`) are the same API it will consume.
+The backend doesn't change; the interface is a layer on top.
 
-## Gobernanza y uso responsable
+## Governance and responsible use
 
-Pensado para desplegarse sobre información real de una organización, y documentado
-como tal: [uso responsable y supervisión humana](docs/uso-responsable.md) ·
-[limitaciones conocidas](docs/limitaciones.md) · [evaluación de riesgos](docs/riesgos.md) ·
-[privacidad y RGPD](docs/privacidad-rgpd.md) · [registro de modelos](docs/modelos.md).
+Built to be deployed on an organization's real information, and documented as
+such: [responsible use and human oversight](docs/uso-responsable.md) ·
+[known limitations](docs/limitaciones.md) · [risk assessment](docs/riesgos.md) ·
+[privacy & GDPR](docs/privacidad-rgpd.md) · [model registry](docs/modelos.md).
 
-## Autor
+## Author
 
 **Javier Núñez Paredes — J13**
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/javier-n%C3%BA%C3%B1ez-paredes-81a66b159/)
 [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:javiernunezparedes@gmail.com)
 
-Licencia [MIT](LICENSE).
+License: [MIT](LICENSE).
