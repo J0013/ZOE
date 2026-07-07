@@ -2,6 +2,12 @@
 
 ![CI](https://github.com/J0013/ZOE/actions/workflows/ci.yml/badge.svg)
 
+> *ZOE is a local-first organizational memory: it compiles meetings and documents
+> into a traceable wiki using local LLMs (Ollama) — 100% offline, no data leaves
+> the machine. Every claim carries a locator pointing to its exact source, and the
+> ingestion pipeline is hardened against prompt injection with an adversarial
+> regression suite running in CI. Docs and code comments are in Spanish.*
+
 Las empresas generan miles de conversaciones, documentos y decisiones que terminan
 perdidas. ZOE convierte todo ese conocimiento en una **memoria consultable con
 trazabilidad completa**: cada afirmación cita la fuente exacta de la que salió, y
