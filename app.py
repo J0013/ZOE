@@ -558,7 +558,10 @@ async def modelos_save(request: Request):
         if form.get(f"model_{n}"):
             cfg["niveles"][n]["model"] = str(form[f"model_{n}"])
         if form.get(f"hilos_{n}"):
-            cfg["niveles"][n]["hilos"] = max(1, min(16, int(form[f"hilos_{n}"])))
+            try:
+                cfg["niveles"][n]["hilos"] = max(1, min(16, int(form[f"hilos_{n}"])))
+            except (ValueError, TypeError):
+                return _err("hilos invalido", 400)
     if form.get("router"):
         cfg["router"] = str(form["router"])
     for _, rol in CAPA_ROL:

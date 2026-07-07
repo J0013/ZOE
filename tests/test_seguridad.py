@@ -38,3 +38,21 @@ def test_token_no_ascii_no_peta():
     assert app._token_valido("ñoño") is False
     assert app._token_valido("") is False
     assert app._token_valido(app.UPLOAD_TOKEN) is True
+
+
+def _client():
+    from fastapi.testclient import TestClient
+    import app as app_mod
+    # base_url fija el Host a uno de la allowlist anti DNS-rebinding
+    return TestClient(app_mod.app, base_url="http://localhost:8900"), app_mod
+
+
+def test_modelos_hilos_invalido_da_400():
+    """POST /modelos con hilos no numéricos: 400 limpio y config intacta."""
+    client, app_mod = _client()
+    antes = app_mod.MODELOS_FILE.read_bytes() if app_mod.MODELOS_FILE.exists() else None
+    r = client.post("/modelos", headers={"X-Token": app_mod.UPLOAD_TOKEN},
+                    data={"hilos_ligero": "abc"})
+    assert r.status_code == 400
+    despues = app_mod.MODELOS_FILE.read_bytes() if app_mod.MODELOS_FILE.exists() else None
+    assert antes == despues
