@@ -14,6 +14,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt pytest httpx
+      - name: Auditoría de CVEs en dependencias fijadas
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --no-deps --disable-pip
       - name: Self-checks de los módulos
         run: |
           python models.py
