@@ -8,16 +8,17 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - run: pip install -r requirements.txt pytest httpx
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt -r requirements-dev.txt
       - name: Auditoría de CVEs en dependencias fijadas
-        run: |
-          pip install pip-audit
-          pip-audit -r requirements.txt --no-deps --disable-pip
+        run: pip-audit -r requirements.txt --no-deps --disable-pip
       - name: Self-checks de los módulos
         run: |
           python models.py

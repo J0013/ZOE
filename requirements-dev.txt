@@ -1,0 +1,4 @@
+# Herramientas de desarrollo — no se instalan en runtime
+pytest
+httpx
+pip-audit
