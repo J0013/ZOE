@@ -10,6 +10,7 @@ sin pagar el boot del CLI del runtime. Si se usa el runtime OpenClaw en contened
 (Popen, no bloquea la request).
 """
 
+import html
 import json
 import os
 import re
@@ -496,15 +497,18 @@ def modelos_page(request: Request):
     import models as _m
     cfg = _m.load_config()
     tags = _ollama_tags() or sorted({v["model"] for v in cfg["niveles"].values()})
+    # Defensa en profundidad: tags de Ollama y valores de modelos.json no se
+    # interpolan crudos en el HTML (pagina autenticada, pero es una linea)
+    esc = html.escape
     opts = lambda sel: "".join(
-        f'<option value="{t}"{" selected" if t == sel else ""}>{t}</option>' for t in tags)
+        f'<option value="{esc(t)}"{" selected" if t == sel else ""}>{esc(t)}</option>' for t in tags)
     filas = "".join(
-        f'<tr><td><b>{n}</b><br><small>{NIVEL_DESC.get(n, "")}</small></td>'
-        f'<td><select name="model_{n}">{opts(v["model"])}</select></td>'
-        f'<td><input type="number" name="hilos_{n}" value="{v.get("hilos", 1)}" min="1" max="16" style="width:4rem"></td></tr>'
+        f'<tr><td><b>{esc(n)}</b><br><small>{NIVEL_DESC.get(n, "")}</small></td>'
+        f'<td><select name="model_{esc(n)}">{opts(v["model"])}</select></td>'
+        f'<td><input type="number" name="hilos_{esc(n)}" value="{esc(str(v.get("hilos", 1)))}" min="1" max="16" style="width:4rem"></td></tr>'
         for n, v in cfg["niveles"].items())
     niv_opts = lambda sel: "".join(
-        f'<option value="{n}"{" selected" if n == sel else ""}>{n}</option>' for n in cfg["niveles"])
+        f'<option value="{esc(n)}"{" selected" if n == sel else ""}>{esc(n)}</option>' for n in cfg["niveles"])
     filas_roles = "".join(
         f'<tr><td>{capa}<br><small>rol: {rol}</small></td>'
         f'<td><select name="rol_{rol}">{niv_opts(cfg["roles"].get(rol, "medio"))}</select></td></tr>'
