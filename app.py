@@ -523,7 +523,7 @@ def modelos_page(request: Request):
         f'<td><select name="rol_{rol}">{niv_opts(cfg["roles"].get(rol, "medio"))}</select></td></tr>'
         for capa, rol in CAPA_ROL)
     capas_sw = " · ".join(f"<b>{c}</b>: {que}" for c, que in CAPAS_SOFTWARE)
-    html = f"""<!doctype html><html lang="es"><meta charset="utf-8">
+    pagina = f"""<!doctype html><html lang="es"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ZOE — modelos</title>
 <body style="font-family:system-ui;max-width:40rem;margin:3rem auto;padding:0 1rem">
@@ -557,7 +557,7 @@ document.querySelector('form').addEventListener('submit', async e => {{
 }});
 </script>
 </body></html>"""
-    return HTMLResponse(html)
+    return HTMLResponse(pagina)
 
 
 @app.post("/modelos")
